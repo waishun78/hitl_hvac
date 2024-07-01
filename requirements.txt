@@ -1,0 +1,14 @@
+#TODO:
+tqdm=4.66.4
+torch=2.3.1
+numpy=2.0.0
+tensordict=0.4.0
+torchrl=0.4.0
+matplotlib=
+loading=
+pandas=
+
+# Might delete - aircon simu
+pygame=2.6.0
+control=
+pythermalcomfort=

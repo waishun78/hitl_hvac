@@ -26,7 +26,6 @@ class ThermalComfortModelSim():
             mapping = self.function_mapping[m]
             met.append(mapping['met'])
             clo.append(mapping['clo'])
-
         self.pmv_scores = pmv_ppd([temp]*length, 
                                     [temp]*length, 
                                     [self.vr]*length, 
@@ -52,7 +51,6 @@ class ThermalComfortModelSim():
     
     def predict_vote(self, mode, temp):
         pmvs = self.pmv(mode, temp)
-        print('values: ' , pmvs)
         votes = np.where((pmvs >= -0.5) & (pmvs <= 0.5), 0, -1)
         return votes
 
