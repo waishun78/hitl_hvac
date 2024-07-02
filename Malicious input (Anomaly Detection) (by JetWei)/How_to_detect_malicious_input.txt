@@ -1,0 +1,191 @@
+How to detect malicious input?
+
+What are malicious input?
+Malicious inputs are intentionally crafted inputs designed to exploit vulnerabilities in software applications, 
+systems, or networks. These inputs are used by attackers to cause unintended behavior, gain unauthorized access, 
+manipulate data, or disrupt services.
+
+What are anomalous input?
+Anomalous input are observations, events or data points that deviate from what is usual, standard or expected, making them 
+inconsistent with the rest of a data set.
+
+
+Source(s): https://www.ibm.com/topics/anomaly-detection (IBM)
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Assumption of this file on 'How to detect malicious input?':
+
+Something to think about: Are malicious input necessarily always anomalous?
+Not necessarily. Malicious input can come in many different forms (and anomalous input is only one of them)! 
+
+Hence, a major assumption on what I have looked at is assuming all malicious input are anomalous. For cases 
+where malicious input is NOT anomalous, there is need to come up with other techniques/algorithms to tackle them.
+A possible way from the top of my head for this to happen, in the context of detecting malicious user input of aircon 
+temperatures, is that a user spams a particular temperature (say 22 degrees), and eventually becoming the majority 
+vote on the system, despite only coming from 1 person. This is malicious input, but at the same time, won't trigger 
+the anomalous detection systems.
+
+Anyways, it might be possible to tackle the cases where malicious input is NOT anomalous by context based,
+like in this context of detecting malicious user input of aircon temperatures, we can just simply restrict the
+amount of inputs by a user (maybe only once every 5 minutes?) (maybe this is a form of the concept of Input 
+Validation (see the 'What is Input Validation' section below) to handle this particular malicious input?)
+
+
+
+What is Input Validation?
+Input Validation is the process of ensuring that data inputs are clean, correct, and useful for preventing 
+cybersecurity attacks. It can be implemented using any programming technique that allows effective enforcement of 
+syntactic and semantic correctness (this might be the thing I should have focused on instead to detecting malicious 
+input...)
+
+
+
+DISCLAIMER:
+I think I might have approached this in the wrong way that I did not do in this file... should look more into 
+cybersecurity methods like Input Validation, instead of statistical or machine learning methods to tackle malicious 
+inputs as statistical or machine learning methods only tackles anomalies, rather than malicious input. Possible to 
+get any cybersecurity ppl to advise on this...?
+
+That said, in what I've done this week, I only focused on identifying possible anomalies detection methods, but they
+do not deal with the assumption mentioned above.
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Straightforward method to do anomaly detection:
+In the context of detecting malicious user input of aircon temperatures into the HVAC HITL RL model, a straightforward, 
+brain dead way, that doesnt require any pre-trained algorithm with a past dataset, is, to simply just think of it as the
+normal aircon temperature settings to only be:
+        
+    in the range of 16 degrees to 28 degrees.
+
+So any input of aircon temperature into the HVAC HITL RL model outside of this range can be considered 'malicious 
+input'
+
+Limitation of this Straightforward method to do this:
+This Straightforward method does not apply to other contexts in detecting malicious user input into the HVAC HITL RL 
+model. So this asks for the need of a more general-purpose method that can detect malicious user input, regardless of
+context.
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Training an anomaly detection algorithm method to do do anomaly detection (a reference paper):
+
+I found a recent paper titled 'Applied Machine Learning anomaly detection methods on Enterprise Purchase Processes', 
+that I feel is possible to integrate some of its Machine Learning anomaly detection methods in this UROP (link of the 
+paper: https://arxiv.org/pdf/2405.14754)
+
+It mentions the use of multiple Machine Learning alrgorithms and statistical methods together to accurately detect
+anomalies including:
+- Univariate methods (using statistical methods and unsupervised learning ML algorithms) - analyzing a single 
+  independent variable/feature at a time, focuses on the distribution, central tendency, and dispersion of that single 
+  independent variable/feature
+  -> Z-score
+  -> DBSCAN (Density-Based Spatial Clustering of Applications with Noise) algorithm
+
+- Multivariate methods (including unsupervised learning ML algorithms) - analyzing more than one independent
+  variablse/features simultaneously focuses on understanding the relationships, correlations, and interactions between 
+  multiple independent variables/features 
+  -> K-Means algorithm
+  -> Isolation Forest algorithm 
+
+It also broke down the different types of possible anomalies:
+- Point Anomalies: Individual data points that are different from the rest.
+- Contextual Anomalies: Data points that are unusual in a specific context.
+- Collective Anomalies: Groups of related data points that are anomalous compared to the entire dataset.
+
+
+Sorry I didnt read very far into it... and there is a knowledge gap of unsupervised learning ML algorithms (like K-Means
+Clustering and Decision Trees) for me and didnt managed to find enough time to close the gap...
+
+(Personal thought: The more I read about anomaly detection in Machine Learning, the more I feel its falling to the realm 
+ of Data Science...)
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Training an anomaly detection algorithm method to do do anomaly detection:
+I believe it makes sense that there is a need to refer new user input to a pre-trained anomaly detection model with past 
+datasets in order to act as a 'baseline' to determine if the new user input is an anomaly.
+
+I believe if we can get a good enough dataset with minimal extreme values to train these anomaly detection algorithms
+they can act as effective anomaly detectors.
+
+(Note that I dont know the exact maths behind each of them but they are possible methods for anomaly detection in general
+contexts)
+
+There are 2 types of anomaly detection algorithms, statistical methods and Machine Learning (ML) methods:
+Statistical methods:
+1. Using Z-score: The Z-score, also called the standard score, it is a statistical method that helps to understand if a data 
+   value is greater or smaller than mean and how far away it is from the mean. More specifically, Z score tells how many 
+   standard deviations away a data point is from the mean.
+    Formula: 
+    Z-score = (datapoint - mean)/standard deviation
+
+    Visualising a normal distribution, it is estimated that 68% of the data points lie between +/- 1 standard deviation, 
+    95% of the data points lie between +/- 2 standard deviation, and 99.7% of the data points lie between +/- 3 standard 
+    deviation.
+
+    Selecting the threshold is crucial, and varies between contexts! It requires trial and error to determine the suitable
+    threshold.
+
+    Advantages: Easy to implement and understand, and computationally inexpensive.
+    Limitation: Assumes the data follows a normal distribution, which might not always be the case.
+
+
+    Source: https://www.geeksforgeeks.org/z-score-for-outlier-detection-python/ (GeekforGeeks)
+
+
+2. Interquartile Range (IQR)
+    Formula:
+    - Q1 represents the 25th percentile of the data.
+    - Q2 represents the 50th percentile of the data.
+    - Q3 represents the 75th percentile of the data.
+    - IQR is the range between the first and the third quartiles namely Q1 and Q3: IQR = Q3 – Q1. 
+
+    The data points which fall below Q1 – 1.5 IQR or above Q3 + 1.5 IQR are anaomaly/outliers.
+
+    Advantages: Easy to implement and understand, and computationally inexpensive.
+    Limitation: Assumes the data follows a normal distribution, which might not always be the case.
+
+
+    Source: https://www.geeksforgeeks.org/interquartile-range-to-detect-outliers-in-data/ (GeekforGeeks)
+
+
+3. Cosine similarity and other vector similarity measures (the anomaly detection method that Dr Marie mentioned)
+   (Didn't have time to look into it, but wanted to leave it here as a possible anomaly detection method)
+   ///haventlooktoofarintothis///
+
+
+
+Machine Learning (ML) methods:
+4. Isolation Forest
+   ///haventlooktoofarintothis///
+
+
+5. DBSCAN (Density-Based Spatial Clustering of Applications with Noise) algorithm
+   ///haventlooktoofarintothis///
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Conclusion:
+So I think the anomalies detection method we choose can be depend on how complex we want it to be for this UROP... Theres 
+very simple way like just using a single anomaly detection method (like Z-score or Isolation Forest), or we can very complex 
+like the presented paper above, using multiple anomaly detection methods together to detect anomalies more accurately (or
+they might even be able to handle other forms of malicious input as well).
+
+Still needs doing:
+Try to figure out, for the context of detecting anomalous user input of aircon temperatures into the HVAC HITL RL model, 
+where can we get the dataset to train these anomaly detection algorithms. Does anyone have any idea where we can find a 
+good HVAC aircon temperature dataset? (Maybe can use LLM data that are trained using different conditions of the Environment
+as the human user input as the dataset, as suggested by Dr Marie)
+
