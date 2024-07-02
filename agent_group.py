@@ -2,13 +2,14 @@ import pandas as pd
 from constants import *
 from agent import Agent
 
+# Add noise to the PMV score to incorporate for anomalous agents
 class AgentGroup():
     def __init__(self, group_size=-1, agents=None, font=None, screen=None, model=None):
         self.agents = [] if agents is None else agents
         self.group_size = group_size if group_size >= 0 else len(agents)
         self.font = font
         self.screen = screen
-        self.nextAgentId = 0
+        self.nextAgentId = 0 
         self.data = None
         self.group_data_df = None
         self.model = model
