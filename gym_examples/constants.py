@@ -29,7 +29,7 @@ TEXT_BOX_HEIGHT = 20
 import os
 from datetime import timedelta
 
-DATA_FILE = "utils/simulated_data.csv" # "utils/simulated_data.csv"
+DATA_FILE = "../utils/simulated_data.csv" # "utils/simulated_data.csv"
 THERMAL_COMFORT_MODEL = "utils/thermal_comfort_model.pickle"
 
 SAMPLE_SIZE = 6000

@@ -1,5 +1,4 @@
 import torch
-
 import numpy as np
 
 from tensordict import TensorDict
@@ -7,9 +6,10 @@ from torchrl.data import BoundedTensorSpec, CompositeSpec, UnboundedContinuousTe
 from torchrl.envs import EnvBase
 from torchrl.envs.utils import check_env_specs
 
-from constants import *
 
 import pygame
+
+from constants import *
 from thermal_comfort_model_sim import ThermalComfortModelSim
 from agent_group import AgentGroup
 from building import Building
@@ -17,6 +17,12 @@ from population_sim import PopulationSim
 
 from pygame.locals import *
 
+
+"""
+References: 
+https://github.com/viktor-ktorvi/torch_rl_experimenting/blob/master/custom_env_linear_system.ipynb
+https://pytorch.org/tutorials/advanced/coding_ddpg.html
+"""
 class AirconEnvironment(EnvBase):
     """
     A reinforcement learning environment simulating an air conditioning system in a building.
@@ -50,8 +56,6 @@ class AirconEnvironment(EnvBase):
         observation_spec (CompositeSpec): Specification of the observation space.
         reward_spec (TensorSpec): Specification of the reward space.
     """
-
-    #TODO: Docstring
     def __init__(self, num_days=None, is_render=True, alpha=1, beta=1):
         super(AirconEnvironment, self).__init__()
         self.dtype = np.float32
