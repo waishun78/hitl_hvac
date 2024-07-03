@@ -1,6 +1,6 @@
 import pandas as pd
-from constants import *
-from agent import Agent
+from gym_examples.constants import *
+from gym_examples.agent import Agent
 
 class AgentGroup():
     def __init__(self, group_size=-1, agents=None, font=None, screen=None, model=None):

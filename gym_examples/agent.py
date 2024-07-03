@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from constants import *
+from gym_examples.constants import *
 
 class Agent(object):
     def __init__(self, id, color=AGENT_OUT_COLOR, data={}, x=0, y=0, font=None, screen=None):

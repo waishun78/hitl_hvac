@@ -1,6 +1,6 @@
 import numpy as np
 from datetime import timedelta
-from constants import *
+from gym_examples.constants import *
 
 class PopulationSim():
     def __init__(self, sample_size=500, time_interval=timedelta(hours=1), is_debug=False):

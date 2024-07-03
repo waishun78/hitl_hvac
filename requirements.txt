@@ -15,6 +15,7 @@ pygame==2.6.0
 control==0.10.0
 pythermalcomfort==2.10.0
 pybullet==
-
+stable_baselines
+tensorflow #because of baselines
 
 # to delete

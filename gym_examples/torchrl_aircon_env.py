@@ -4,16 +4,14 @@ import numpy as np
 from tensordict import TensorDict
 from torchrl.data import BoundedTensorSpec, CompositeSpec, UnboundedContinuousTensorSpec
 from torchrl.envs import EnvBase
-from torchrl.envs.utils import check_env_specs
-
 
 import pygame
 
-from constants import *
-from thermal_comfort_model_sim import ThermalComfortModelSim
-from agent_group import AgentGroup
-from building import Building
-from population_sim import PopulationSim
+from gym_examples.constants import *
+from gym_examples.thermal_comfort_model_sim import ThermalComfortModelSim
+from gym_examples.agent_group import AgentGroup
+from gym_examples.building import Building
+from gym_examples.population_sim import PopulationSim
 
 from pygame.locals import *
 
@@ -89,10 +87,6 @@ class AirconEnvironment(EnvBase):
         self.thermal_comfort_model = ThermalComfortModelSim() #TODO: Make more complicated
         self.popSim_is_debug = False
         self.popSim = PopulationSim(sample_size=self.sample_size, time_interval=self.time_interval, is_debug=self.popSim_is_debug)
-        agent_group = AgentGroup(group_size=self.popSim.sample_size, 
-                                 font=self.font,
-                                 screen=self.screen,
-                                 model=self.thermal_comfort_model)
         self.agents_out = self.create_agents()
         self.state = self.get_states()
 
@@ -359,6 +353,8 @@ class AirconEnvironment(EnvBase):
 
 # Checking process
 if __name__ == "__main__":
+    from torchrl.envs.utils import check_env_specs
+
     env = AirconEnvironment(30, True, 1, 1) # create environment object
     check_env_specs(env)
 

@@ -1,5 +1,5 @@
 import pygame
-from constants import *
+from gym_examples.constants import *
 
 class Building():
     def __init__(self):
