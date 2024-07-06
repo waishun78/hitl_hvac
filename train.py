@@ -8,10 +8,10 @@ from models.HITLDQNAgent import HITLDQNAgent
 # Needed:Import gym environment (assumed to be already registered)
 import gym_examples
 
+LOAD_FILEPATH = "runs/saved_models/hitl_dqnv0"
+
 # set up matplotlib
-is_ipython = 'inline' in matplotlib.get_backend()
-if is_ipython:
-    from IPython import display
+from IPython import display
 
 plt.ion()
 
@@ -73,6 +73,8 @@ for i_episode in range(NUM_EPISODES):
         agent.optimize_model()
 
     rewards_ls.append(accum_rewards.item())
+
+agent.save_model(LOAD_FILEPATH)
 
 plot_durations(show_result=True)
 plt.ioff()
