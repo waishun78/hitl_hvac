@@ -30,7 +30,6 @@ class AirconEnvironment(EnvBase):
         is_render (bool): Flag to enable or disable rendering.
         alpha (float): Penalty coefficient for thermal comfort.
         beta (float): Coefficient for another penalty (e.g., energy usage).
-        num_days (int): Number of days for the simulation.
         ambient_temp (float): Current ambient temperature.
         vote_up (int): Number of up votes from agents.
         vote_down (int): Number of down votes from agents.

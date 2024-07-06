@@ -39,7 +39,6 @@ class AgentGroup():
     def predict(self, temp, ambient_temp, alpha=1, beta=0.03):
         q = -m * c_p * abs(temp - ambient_temp)
         power = q / (TIME_INTERVAL / timedelta(hours=1)) / 1000
-
         if len(self.agents) > 0:
             df = self.get_group_data_df()
             pred = self.model.predict_score(df['user'].values, temp)
@@ -48,7 +47,8 @@ class AgentGroup():
             # print('Formula for Sum: ', alpha * VOLUME * pred.sum() / (len(df) ** 0.4) + beta * power)
             # print('Formula for Mean: ', alpha * VOLUME * pred.mean() / (len(df) ** 0.4) + beta * power)
             # print('='*20)
-            return (alpha * VOLUME * pred.sum() / (len(df) ** 0.4) + beta * power), (alpha * VOLUME * pred.mean() / (len(df) ** 0.4) + beta * power)
+            rl_reward, x = (alpha * VOLUME * pred.sum() / (len(df) ** 0.4) + beta * power), (alpha * VOLUME * pred.mean() / (len(df) ** 0.4) + beta * power)
+            return rl_reward, x
         else:
             print('No agents in group')
             return power

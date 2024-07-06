@@ -3,7 +3,7 @@ if __name__ == "__main__":
     from stable_baselines3.common.env_checker import check_env
 
     print("--------------Testing: GYMNASIUM AIRCON ENVIRONMENT--------------")
-    env = AirconEnvironment(False, 30, 1, 1)
+    env = AirconEnvironment(False, 1, 1)
     check_env(env)
 
     from gym_examples.torchrl_aircon_env import AirconEnvironment

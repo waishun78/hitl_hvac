@@ -21,7 +21,6 @@ class AirconEnvironment(gym.Env):
         is_render (bool): Flag to enable or disable rendering.
         alpha (float): Penalty coefficient for thermal comfort.
         beta (float): Coefficient for another penalty (e.g., energy usage).
-        num_days (int): Number of days for the simulation.
         ambient_temp (float): Current ambient temperature.
         vote_up (int): Number of up votes from agents.
         vote_down (int): Number of down votes from agents.
@@ -45,13 +44,12 @@ class AirconEnvironment(gym.Env):
         observation_spec (CompositeSpec): Specification of the observation space.
         reward_spec (TensorSpec): Specification of the reward space.
     """
-    def __init__(self, is_render=True, num_days=None, alpha=1, beta=1):
+    def __init__(self, is_render=True, alpha=1, beta=1):
         # Environment Setup Variables 
         self.is_render = is_render
         self.alpha = alpha
         self.beta = beta
 
-        self.num_days = num_days
         self.ambient_temp = 0
         self.vote_up = 0
         self.vote_down = 0
@@ -76,22 +74,30 @@ class AirconEnvironment(gym.Env):
         self.popSim_is_debug = False
         self.popSim = PopulationSim(sample_size=self.sample_size, time_interval=self.time_interval, is_debug=self.popSim_is_debug)
         self.agents_out = self.create_agents()
-        self.curr_time = self.popSim.curr_time
+        self.curr_time = DAY_START_TIME
 
-        assert (self.num_days is None) or (self.num_days > 0), "Error: num_days must be either none or greater than 0."
+        self.updatePopSim()
+        self.curr_time = self.popSim.curr_time
+        self.updateTemp() # TODO: Improve the complexity of this
 
         # self.state_space = spaces.Dict({})
-        self.observation_space = spaces.Dict(
-            {
-                "ambient_temp": spaces.Box(low=0.0, high=50.0, shape=(1,), dtype=np.float32),
-                "vote_up": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-                "vote_down": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-                "population_size": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-                "curr_time_sec": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-                "temp_setpt": spaces.Box(low=0.0, high=50.0, shape=(1,), dtype=np.float32),
-            }
+        # self.observation_space = spaces.Dict(
+        #     {
+        #         "ambient_temp": spaces.Box(low=0.0, high=50.0, shape=(1,), dtype=np.float32),
+        #         "vote_up": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
+        #         "vote_down": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
+        #         "population_size": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
+        #         "curr_time_sec": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
+        #         "temp_setpt": spaces.Box(low=0.0, high=50.0, shape=(1,), dtype=np.float32),
+        #     }
+        # )
+        self.observation_space = spaces.Box(
+            low=np.array([0.0, -2**63, -2**63, -2**63, -2**63, 0.0], dtype=np.float32),
+            high=np.array([50.0, 2**63-1, 2**63-1, 2**63-1, 2**63-1, 50.0], dtype=np.float32),
+            dtype=np.float32
         )
-        self.action_space = spaces.Box(low=0, high=50)
+        # self.action_space = spaces.Box(low=0, high=50)
+        self.action_space = spaces.Discrete(46) #range between $20-28 \degree C$}, with intervals of $0.2 \degree C$
 
     def _get_obs(self):
         return {
@@ -139,19 +145,19 @@ class AirconEnvironment(gym.Env):
         if self.is_render:
             self.render()
 
-        return observation, info
+        return dict_to_np(observation), info
 
-    def step(self, action: np.ndarray):
-        self.temp_setpt = action.item()
-
+    def step(self, action: int):
+        self.temp_setpt = action
+        temp_setpt = 20+action*0.2 #TODO: Is this the correct way - convert state to temp_setpt 
         self.updatePopSim()
         self.curr_time = self.popSim.curr_time
         self.updateTemp() # TODO: Improve the complexity of this
 
         # Prepare observation, reward, terminated, False, info
         observation = self._get_obs()
-        reward = self.get_reward(action)
-        if self.num_days is not None and self.curr_time >= timedelta(hours=(self.num_days - 1) * 24 + DAY_END_TIME):
+        reward = self.get_reward(temp_setpt)
+        if self.curr_time >= timedelta(hours=DAY_END_TIME):
             terminated = True
         else:
             terminated = False
@@ -160,7 +166,7 @@ class AirconEnvironment(gym.Env):
         if self.is_render:
             self.render()
 
-        return observation, reward, terminated, False, info
+        return dict_to_np(observation), reward, terminated, False, info
 
     def render(self):
         if self.is_render:
@@ -222,8 +228,7 @@ class AirconEnvironment(gym.Env):
                                 ).predict(temp=self.temp_setpt, 
                                             ambient_temp=self.ambient_temp,
                                             alpha=self.alpha,
-                                            beta=self.beta)
-        
+                                            beta=self.beta)        
         return rl_reward
 
     def updatePopSim(self):
@@ -294,7 +299,24 @@ class AirconEnvironment(gym.Env):
             upper = min(30, self.ambient_temp)
             lower = 27
         self.ambient_temp = round(np.random.uniform(lower, upper), 1)
+
+    def setBackground(self):
+        """
+        Sets up the background surface for the Pygame display and fills it with a background color
+        """
+        self.background = pygame.surface.Surface(SCREENSIZE).convert()
+        self.background.fill(BG_COLOR)
     
+def dict_to_np(input_dict):
+    # Extract values from the dictionary and convert to a numpy array
+    print(input_dict)
+    np_array = np.array(list(input_dict.values()), dtype=np.float32).flatten()
+    
+    # Convert numpy array to a torch tensor with float32 type
+    # torch_tensor = torch.tensor(np_array, dtype=torch.float32)
+
+    return np_array
+
 """
 Verification
 cd gym_examples
