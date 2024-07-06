@@ -154,6 +154,13 @@ class AirconEnvironment(gym.Env):
         self.curr_time = self.popSim.curr_time
         self.updateTemp() # TODO: Improve the complexity of this
 
+
+        df = AgentGroup(agents=self.agents_in, model=self.thermal_comfort_model).get_group_data_df()
+        votes = self.thermal_comfort_model.predict_vote(df['user'].values, self.temp_setpt)
+        vote_up, vote_down = sum(votes), len(votes) - sum(votes)
+        self.vote_up = vote_up
+        self.vote_down = vote_down
+
         # Prepare observation, reward, terminated, False, info
         observation = self._get_obs()
         reward = self.get_reward(temp_setpt)

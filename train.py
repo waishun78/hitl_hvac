@@ -43,12 +43,11 @@ def plot_durations(show_result=False):
     plt.legend(["RL policy", "Set point control"])
     
     plt.pause(0.001)
-    if is_ipython:
-        if not show_result:
-            display.display(plt.gcf())
-            display.clear_output(wait=True)
-        else:
-            display.display(plt.gcf())
+    if not show_result:
+        display.display(plt.gcf())
+        display.clear_output(wait=True)
+    else:
+        display.display(plt.gcf())
 
 NUM_EPISODES = 200 if torch.cuda.is_available() or torch.backends.mps.is_available() else 50 # Number of days (each episode is a day)
 rewards_ls = []
