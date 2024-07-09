@@ -2,12 +2,13 @@ from typing import List
 import pygame
 from gym_examples.utils.building import Building
 from gym_examples.utils.constants import *
-from gym_examples.utils.humans import Human
+from gym_examples.utils.population import Human
 
 class SimulationVisualiser():
     def __init__(self, is_render=False):
         self.is_render = is_render
         if self.is_render:
+            print("Initialising display....")
             pygame.init()
             pygame.display.set_caption('HitL AC Simulation')
             self.screen = pygame.display.set_mode(SCREENSIZE, 0, 32)
@@ -27,15 +28,14 @@ class SimulationVisualiser():
     def update(self, humans_in:List[Human], humans_out:List[Human], building: Building, curr_time, reward:int, 
                vote_up:int, vote_down:int, temp_setpt:int, time_interval, sample_size:int):
         if self.is_render:
-            if self.clock is None:
-                self.clock = pygame.time.Clock()
+            self.clock = pygame.time.Clock()
 
             self.screen.blit(self.background, (0, 0))
             self.screen.blit(self.background, (0, 0))
 
             self.render_building(building)
-            for human_in in humans_in: self.render_human(human_in)
-            for human_out in humans_out: self.render_human(human_out)
+            for human_in in humans_in: self.render_human(human_in, True)
+            for human_out in humans_out: self.render_human(human_out, False)
 
             # display stats
             def _displayText(description, pos_description, value, pos_value):
@@ -60,9 +60,7 @@ class SimulationVisualiser():
                         (90, 7*FONTSIZE),
                         str(temp_setpt) + " / " + str(reward), 
                         (280, 7*FONTSIZE))
-            
             pygame.display.update()
-            return self._render_frame()
            
     def close(self):
         pygame.display.quit()
@@ -77,4 +75,4 @@ class SimulationVisualiser():
         color = AGENT_IN_COLOR if is_inside else AGENT_OUT_COLOR
         pygame.draw.rect(self.screen, color, (human.x, human.y, TEXT_BOX_LENGTH, TEXT_BOX_HEIGHT))
         text = self.font.render(str(human.id), True, BLACK) if self.font is not None else None
-        self.screen.blit(text, text.get_rect(center=(self.x + 15, self.y + FONTSIZE)))
+        self.screen.blit(text, text.get_rect(center=(human.x + 15, human.y + FONTSIZE)))
