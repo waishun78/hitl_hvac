@@ -7,16 +7,17 @@ from torchrl.envs import EnvBase
 
 import pygame
 
-from gym_examples.constants import *
-from gym_examples.thermal_comfort_model_sim import ThermalComfortModelSim
+from gym_examples.utils.constants import *
+from gym_examples.utils.thermal_comfort_model_sim import ThermalComfortModelSim
 from gym_examples.agent_group import AgentGroup
-from gym_examples.building import Building
+from gym_examples.utils.building import Building
 from gym_examples.population_sim import PopulationSim
 
 from pygame.locals import *
 
 
 """
+TODO: Refactor needed
 References: 
 https://github.com/viktor-ktorvi/torch_rl_experimenting/blob/master/custom_env_linear_system.ipynb
 https://pytorch.org/tutorials/advanced/coding_ddpg.html
@@ -243,7 +244,7 @@ class AirconEnvironment(EnvBase):
         if len(self.agents_in) > 0:
             df = AgentGroup(agents=self.agents_in, model=self.thermal_comfort_model).get_group_data_df()
             
-            votes = self.thermal_comfort_model.predict_vote(df['user'].values, self.temp_setpt)
+            votes = self.thermal_comfort_model.get_vote(df['user'].values, self.temp_setpt)
             vote_up, vote_down = sum(votes), len(votes) - sum(votes)
 
             self.vote_up = vote_up

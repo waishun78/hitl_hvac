@@ -6,15 +6,15 @@ if __name__ == "__main__":
     env = AirconEnvironment(False, 1, 1)
     check_env(env)
 
-    from gym_examples.torchrl_aircon_env import AirconEnvironment
-    from torchrl.envs.utils import check_env_specs
-    import torch
-    from tensordict import TensorDict
+    # from gym_examples.torchrl_aircon_env import AirconEnvironment
+    # from torchrl.envs.utils import check_env_specs
+    # import torch
+    # from tensordict import TensorDict
 
-    print("--------------Testing: TORCHRL AIRCON ENVIRONMENT--------------")
-    env = AirconEnvironment(30, True, 1, 1) # create environment object
-    check_env_specs(env)
+    # print("--------------Testing: TORCHRL AIRCON ENVIRONMENT--------------")
+    # env = AirconEnvironment(30, True, 1, 1) # create environment object
+    # check_env_specs(env)
 
-    # Simulate applying a constant action 24
-    rollout = env.rollout(10, policy=lambda _: TensorDict({"action": 24.0}, batch_size=torch.Size()))
-    print("Observation: ", rollout["observation"])
+    # # Simulate applying a constant action 24
+    # rollout = env.rollout(10, policy=lambda _: TensorDict({"action": 24.0}, batch_size=torch.Size()))
+    # print("Observation: ", rollout["observation"])

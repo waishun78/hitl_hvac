@@ -30,6 +30,8 @@ n_observations = len(state)
 n_actions = env.action_space.n
 
 agent = HITLDQNAgent(n_observations, n_actions, device)
+agent.set_learning(False) # No more random policy exploration
+
 agent.load_model(LOAD_FILEPATH)
 
 

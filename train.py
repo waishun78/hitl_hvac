@@ -22,7 +22,7 @@ device = torch.device(
     "cpu"
 )
 
-env = gym.make("AirconEnvironment-v0", is_render=False, alpha=1, beta=1)
+env = gym.make("AirconEnvironment-v0", is_render=False,  w_usercomfort=1, w_energy=1)
 state, info = env.reset()
 n_observations = len(state)
 n_actions = env.action_space.n
