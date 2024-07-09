@@ -1,0 +1,155 @@
+Summary of thoughts for the week on Adversarial attacks detection in crowdsourcing (in the context of the air con 
+simulation of the HVAC HITL RL model):
+
+My objective for this week:
+For this week I was looking to pursue further on the detecting adversarial attacks, while,
+•	looking more at the papers that Wai Shun recommended, which are papers that are talking about detecting adversarial 
+  attacks from the viewpoint of crowdsourcing
+•	instead of coming up with a new method for adversarial attacks detection in crowdsourcing, just find from another 
+  paper for a more well thought-out existing framework for a established method for adversarial attacks detection in 
+  crowdsourcing as recommended by Dr Zi Han
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+My thought process:
+Important definitions to know:
+What is crowdsourcing?
+Crowdsourcing involves the obtaining of work, information, or opinions from a large group of people.
+
+Hence, when we take multiple human user input of their preferred air con temperature into the HVAC HITL RL model to make 
+a prediction of an optimal air con temperature, this is a form of crowdsourcing.
+
+
+Difference between malicious attacks and adversarial attacks:
+Malicious attacks refer to a broad category of actions intended to cause harm, steal data, disrupt services, or gain 
+unauthorized access to systems. 
+•	The primary goals are often theft, destruction, disruption, espionage, or financial gain. Examples include stealing 
+  sensitive information, deploying ransomware, defacing websites, or disrupting services
+
+Adversarial attacks are a specific subset of malicious attacks that primarily target machine learning (ML) models and 
+artificial intelligence (AI) systems. 
+•	The primary goals are to cause the ML model to make incorrect predictions, classifications, or decisions. This can 
+  lead to security breaches, misinformation, or manipulation of AI-driven outcomes.
+
+(Just a minor thing if were doing this... the more accurate term for this would be 'adversarial attacks' detection (not 
+'malicious attacks') for the context of this UROP since we are detecting adversarial inputs into our RL (ML) algorithm)
+
+
+What is Collusion?
+Collusion is a form of malicious/adversarial attack which involves multiple workers or participants in a crowdsourcing, 
+collaborating to manipulate or distort the outcomes/prediction of tasks or assignments. (E.g. the repeated 26 degrees 
+input from adversarial users)
+
+
+What is Input Validation? 
+Input Validation is the process of analyzing inputs and disallowing those which are considered unsuitable.
+
+
+What is an anomaly?
+An anomaly refers to an outlier data. 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+Papers I read and my review on them:
+'Classifying workers for Mitigating Adversarial Attacks in Crowdsourcing' 
+(link: https://www.researchsquare.com/article/rs-3189193/v1.pdf) (recommended by Wai Shun)
+Review: 
+•	This paper recommends a framework called TITA, which detects adversarial workers/users by making use of gold 
+  tasks (tasks that we know the correct answer to) and normal tasks (tasks that we dont know the correct answer to), 
+  in crowdsourcing tasks. Based on the workers/users' answer on the gold tasks and normal tasks, TITA then derives a 
+  truth inference for that worker/user, based on a calculated reliability and trust score to classify whether a 
+  worker/user is honest, adversarial, or undetermined 
+•	However, in this paper, TITA can only detect adversarial workers/users by making truth inference with the presence 
+  of gold tasks, which are tasks that have correct/wrong answers, and I'm not certain if it's able to be used in our 
+  HVAC HITL RL model since the nature of our HVAC HITL RL model takes preferred air con temperature input from human 
+  users, and hence does not really have a 'correct/wrong answer'
+
+
+'Detecting Adversaries in Crowdsourcing' 
+(link: https://arxiv.org/abs/2110.04117#:~:text=Despite%20its%20successes%20in%20various,popular%20Dawid%20and%20Skene%20model)
+Review:
+•	This paper recommends a subspace clustering based algorithm that makes use of the Dawid-Skene model to detecting 
+  adversaries, in labelling crowdsourcing tasks
+•	This algorithm identifies the respective adversarial and honest labels provided by annotators/workers/users using 
+  the Dawid-Skene model (Im not super sure how it does this...) and assigns different functions to handle each group 
+  of labels (adversarial and honest). It then outputs the final aggregated labels
+•	This algorithm assumes that each annotator/worker/user can provide multiple labels
+•	However, in this paper, they are using this algorithm for labelling tasks, and I'm similarly not certain if it's 
+  able to be used in our HVAC HITL RL model since the nature of our HVAC HITL RL model takes preferred air con 
+  temperature input from human users, and hence does not really have a 'correct/wrong answer'
+
+•	(Note: 'Labelling tasks' in this paper refers to a workers/users selecting a correct answer from mutliple alternatives)
+
+
+'Collusion Detection and Ground Truth Inference in Crowdsourcing for Labelling Tasks' 
+(link: https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://www.jmlr.org/papers/volume22/19-373/19-373.pdf&ved=2ahUKEwitlZ38qZSHAxUlTmwGHY04CzcQFnoECBQQAQ&usg=AOvVaw1T8xH207dqfzK2xGaVDdgY) 
+(recommended by Wai Shun)
+Review:
+•	Pretty massive paper (45 pages)
+•	This paper recommends PROCAP (Pairwise Recognition Of Collusion with Asymptotic Promise) a framework that also 
+  makes use of the Dawid-Skene model to detect collusion in crowdsourcing.
+•	Very big and mathematically intensive paper, PROCAP is basically a very well thought-out statistical method that 
+  aims to solve the various types of Collusion Adversarial Attacks
+•	Very math intensive, hopefully no need to manually reimplement it in code... haven't tried searching but will be 
+  good if can manage to find the code for this PROCAP statistical method that detects collusion in crowdsourcing 
+  online...
+
+
+
+
+My proposed framework for Adversarial attacks detection in crowdsourcing (in the context of the air con simulation 
+of the HVAC HITL RL model) (and seems doable in code):
+I believe that it is impossible to deal with all types of adversarial attacks as I think they can be very context 
+based (as they can exploit the system with all kinds of unique attacks for every context)
+
+
+Hence in my proposed framework, I am have 3 layers of defense against 3 types of adversarial attacks:
+1. Defense: Input Validation (i.e. limit to only 1 input per user in the RL simulation) 
+   •	Adversarial attack: Spam of multiple preferred air con temperature from a user
+
+2. Defense: Isolation forest (identifies anomalies that stray too far from the majority cluster)
+   •	Adversarial attack: Anomaly/extreme data of preferred air con temperature from a user
+   •	(Limitation of Isolation forest: it cannot detect collusion adversarial attacks)
+
+3. Defense: PROCAP (from the 'Collusion Detection and Ground Truth Inference in Crowdsourcing for Labelling Tasks' 
+                    paper')
+   •	Adversarial attack: Collusion (which supports the limitation of the Isolation Forest's clustering anomaly 
+      detection method)
+
+Assumptions:
+•	This proposed framework for Adversarial attacks detection in crowdsourcing (in the context of the air con 
+  simulation of the HVAC HITL RL model), assumes that there is a sufficiently large sample size, 
+•	The majority of the human inputs into the HVAC HITL RL model are honest users (non adversarial users)
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+More on Collusion from the 'Collusion Detection and Ground Truth Inference in Crowdsourcing for Labelling Tasks' 
+paper:
+To detect the collusive behavior of workers, the first step is to consider the characteristics of the labels 
+given by colluding workers. Chen et al. (2018) summarized three types of collusive behaviors:
+(1) Duplicated submission, where a group of workers work together on the same task and submit the same answer;
+(2) Group plagiarism, where some workers simply plagiarize others’ answers; and
+(3) Spam accounts, where one worker registers multiple accounts within one crowdsourcing platform and submits 
+the same answer to a task for multiple times, which is often referred to as Sybil attack (Douceur, 2002).
+
+In all the three types of collusive behaviors, the colluding workers will give the same label on a task, which 
+is the key for collusion detection.
+
+Also uses the Dawid-Skene model! (Would help if anyone knows what it does... it somehow is able to determine if 
+a particular user input is an adversarial or honest in relation to the other user inputs) 
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+To do:
+• I should definitely look more into the Dawid-Skene model by next week, as it seems like a very commonly used 
+  model in the realm of detecting various types of adversarial attacks based on the papers I've read
+• Do a code for the isolation forest + collusion detection method as proof of concept?
+
