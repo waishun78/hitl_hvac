@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import gymnasium as gym
 import torch
+from gym_examples.utils.population import PopulationSimulation
 from models.HITLDQNAgent import HITLDQNAgent
 
 # Needed:Import gym environment (assumed to be already registered)
@@ -24,7 +25,8 @@ ENV = "AirconEnvironment-v0"
 LOAD_FILEPATH = "runs/saved_models/hitl_dqnv0"
 TEST_EPISODES = 20
 
-env = gym.make("AirconEnvironment-v0", is_render=False, alpha=1, beta=1)
+population = PopulationSimulation(2, 0.3, 1, 2, 100, 50)
+env = gym.make("AirconEnvironment-v0", population_simulation=population, is_render=False, check_optimal=False ,w_usercomfort=20, w_energy=1)
 state, info = env.reset()
 n_observations = len(state)
 n_actions = env.action_space.n

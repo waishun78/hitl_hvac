@@ -10,17 +10,9 @@ class ThermalComfortModelSim():
         self.met_l = [1.1, 1.2, 1.3]
         self.clo_l = [0.46, 0.57, 0.68]
 
-    def pmv(self, mode:int, temp:float):
-        met = self.met_l[mode%3]
-        clo = self.clo_l[mode//3]
+    def pmv(self, met:int, clo:int, temp:int):
         pmv = pmv_ppd(temp, temp, self.vr, self.rh, met, clo, standard="ASHRAE")['pmv']
         return pmv
-    
-    def get_vote(self, mode, temp) -> int:
-        """Return vote up (+1) vote down(-1) based on mode and temp"""
-        pmv = self.pmv(mode, temp)
-        vote = -1 if pmv>0.5 else (1 if pmv<-0.5 else 0)
-        return vote
 
     # def show_distributions(self):
     #     x = [temp for temp in np.arange(16, 32, 0.01)]

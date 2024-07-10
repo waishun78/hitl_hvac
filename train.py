@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import gymnasium as gym
 import torch
+from gym_examples.utils.population import PopulationSimulation
 from models.HITLDQNAgent import HITLDQNAgent
 
 # Needed:Import gym environment (assumed to be already registered)
@@ -42,7 +43,9 @@ if __name__ == "__main__":
         "cpu"
     )
 
-    env = gym.make("AirconEnvironment-v0", is_render=False, check_optimal=True ,w_usercomfort=1, w_energy=1)
+    population = PopulationSimulation(1, 0.3, 0.5, 2, 100, 50)
+    # w_energy, w_usercomfort is from generated from a comfort score of range (-40 - 0) and power score (-1000 - -300)
+    env = gym.make("AirconEnvironment-v0", population_simulation=population, is_render=False, check_optimal=False ,w_usercomfort=20, w_energy=1)
     print("######------------------------------------Resetting environment...------------------------------------######")
     state, info = env.reset()
     n_observations = len(state)
@@ -52,7 +55,7 @@ if __name__ == "__main__":
 
     episode_durations = []
 
-    NUM_EPISODES = 20 if torch.cuda.is_available() or torch.backends.mps.is_available() else 50 # Number of days (each episode is a day)
+    NUM_EPISODES = 100 if torch.cuda.is_available() or torch.backends.mps.is_available() else 50 # Number of days (each episode is a day)
     rewards_ls = []
     for i_episode in range(NUM_EPISODES):
         print(f'######------------------------------------EPISODE {i_episode}------------------------------------######')

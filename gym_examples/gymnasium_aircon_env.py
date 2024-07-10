@@ -1,5 +1,7 @@
+from enum import Enum
+from typing import Dict
 import numpy as np
-from scipy.optimize import minimize, basinhopping
+from scipy.optimize import minimize
 
 import gymnasium as gym
 from gymnasium import spaces
@@ -10,6 +12,13 @@ from gym_examples.utils.population import PopulationSimulation
 from gym_examples.utils.constants import *
 from gym_examples.utils.simulation_visualiser import SimulationVisualiser
 
+class Observation(Enum):
+    AMBIENT_TEMP = 1
+    TEMP_SETPT = 2
+    VOTE_UP = 3
+    VOTE_DOWN = 4
+    POPULATION_SIZE = 5
+    CURR_TIME_SEC = 6
 
 class AirconEnvironment(gym.Env):
     """
@@ -26,7 +35,7 @@ class AirconEnvironment(gym.Env):
         action_space: Specification of the action space.
         observation_space (CompositeSpec): Specification of the observation space.
     """
-    def __init__(self, is_render=False, check_optimal=False, w_usercomfort=1, w_energy=1):
+    def __init__(self, population_simulation:PopulationSimulation, is_render=False, check_optimal=False, w_usercomfort=1, w_energy=1):
         # Environment Setup Variables 
         self.is_render = is_render
         self.w_usercomfort = w_usercomfort
@@ -40,33 +49,45 @@ class AirconEnvironment(gym.Env):
         self.temp_setpt = self.ambient_temp
 
         self.building = Building()
-        self.population_simulation = PopulationSimulation(SAMPLE_SIZE, TIME_INTERVAL)
+        self.population_simulation = population_simulation
+        self.prev_pmv = [0 for _ in range(7)]
 
-        self.render_engine = SimulationVisualiser(is_render)
-
+        # self.render_engine = SimulationVisualiser(is_render)
 
         self.is_terminate = False
 
         # self.state_space = spaces.Dict({})
-        # self.observation_space = spaces.Dict(
-        #     {
-        #         "ambient_temp": spaces.Box(low=0.0, high=50.0, shape=(1,), dtype=np.float32),
-        #         "vote_up": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-        #         "vote_down": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-        #         "population_size": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-        #         "curr_time_sec": spaces.Box(low=-2**63, high=2**63-1, shape=(1,), dtype=np.float32),
-        #         "temp_setpt": spaces.Box(low=0.0, high=50.0, shape=(1,), dtype=np.float32),
-        #     }
-        # )
         self.observation_space = spaces.Box(
-            low=np.array([-2**63, -2**63, -2**63, -2**63, -2**63, 2**63-1], dtype=np.float32),
-            high=np.array([2**63-1, 2**63-1, 2**63-1, 2**63-1, 2**63-1, 2**63-1], dtype=np.float32),
+            low=np.array([
+                -2**63, # ambient temp
+                -2**63, # temp_setpt
+                0, # PMV -3
+                0, # PMV -2
+                0, # PMV -1
+                0, # PMV  0
+                0, # PMV +1
+                0, # PMV +2
+                0, # PMV +3
+                -2**63, # curr_time_sec
+                ], dtype=np.float32),
+            high=np.array([
+                2**63-1, 
+                2**63-1, 
+                2**63-1, 
+                2**63-1, 
+                2**63-1,
+                2**63-1, 
+                2**63-1, 
+                2**63-1, 
+                2**63-1, 
+                2**63-1, 
+                ], dtype=np.float32),
             dtype=np.float32
         )
         # self.action_space = spaces.Box(low=0, high=50)
         self.action_space = spaces.Discrete(46) #range between $20-28 \degree C$}, with intervals of $0.2 \degree C$
 
-    def _get_info(self):
+    def _get_info(self) -> Dict:
         """Auxiliary information returned by step and reset"""
         if self.check_optimal: 
             optimal_temp = self.optimize_temperature()
@@ -74,7 +95,7 @@ class AirconEnvironment(gym.Env):
         else:
             return {}
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=None, options=None) -> None:
         # We need the following line to seed self.np_random
         super().reset(seed=seed)
         self.curr_time = timedelta(days=0, hours=DAY_START_TIME)
@@ -84,7 +105,7 @@ class AirconEnvironment(gym.Env):
         self.temp_setpt = self.ambient_temp
         
         self.building = Building()
-        self.population_simulation = PopulationSimulation(SAMPLE_SIZE, TIME_INTERVAL)
+        self.population_simulation.reset()
 
         self.render_engine = SimulationVisualiser()
 
@@ -94,21 +115,21 @@ class AirconEnvironment(gym.Env):
         observation = self._get_obs()
         info = {} # self._get_info()
 
-        if self.is_render:
-            reward = 0
-            up_votes, down_votes = self.population_simulation.get_vote_up_count(self.temp_setpt)
-            self.render_engine.update(
-                            humans_in=self.population_simulation.get_humans(True), 
-                            humans_out=self.population_simulation.get_humans(False),
-                            building=self.building, 
-                            reward=0,
-                            curr_time=self.curr_time,
-                            vote_up=up_votes,
-                            vote_down=down_votes,
-                            temp_setpt=self.temp_setpt,
-                            time_interval=TIME_INTERVAL,
-                            sample_size=SAMPLE_SIZE,
-                        )
+        # if self.is_render:
+        #     reward = 0
+        #     up_votes, down_votes = self.population_simulation.get_cum_pmv(self.temp_setpt)
+        #     self.render_engine.update(
+        #                     humans_in=self.population_simulation.get_df(), 
+        #                     humans_out=self.population_simulation.get_humans(False),
+        #                     building=self.building, 
+        #                     reward=0,
+        #                     curr_time=self.curr_time,
+        #                     vote_up=up_votes,
+        #                     vote_down=down_votes,
+        #                     temp_setpt=self.temp_setpt,
+        #                     time_interval=TIME_INTERVAL,
+        #                     sample_size=SAMPLE_SIZE,
+        #                 )
         return dict_to_np(observation), info
 
     def step(self, action: int):
@@ -124,42 +145,43 @@ class AirconEnvironment(gym.Env):
         reward = self.get_reward(self.temp_setpt)
         terminated = True if self.curr_time >= timedelta(hours=DAY_END_TIME) else False
         info = self._get_info()
-        up_votes, down_votes = self.population_simulation.get_vote_up_count(self.temp_setpt)
 
         # Update visualiser
-        if self.is_render and not terminated:
-            print("Updating display....")
-            self.render_engine.update(
-                                        humans_in=self.population_simulation.get_humans(True), 
-                                        humans_out=self.population_simulation.get_humans(False),
-                                        building=self.building, 
-                                        reward=reward,
-                                        curr_time=self.curr_time,
-                                        vote_up=up_votes,
-                                        vote_down=down_votes,
-                                        temp_setpt=self.temp_setpt,
-                                        time_interval=TIME_INTERVAL,
-                                        sample_size=SAMPLE_SIZE,
-                                    )
-        elif self.is_render and terminated:
-            print("Quitting visualiser...")
-            self.render_engine.close()
+        # if self.is_render and not terminated:
+        #     self.render_engine.update(
+        #                                 humans_in=self.population_simulation.get_humans(True), 
+        #                                 humans_out=self.population_simulation.get_humans(False),
+        #                                 building=self.building, 
+        #                                 reward=reward,
+        #                                 curr_time=self.curr_time,
+        #                                 vote_up=up_votes,
+        #                                 vote_down=down_votes,
+        #                                 temp_setpt=self.temp_setpt,
+        #                                 time_interval=TIME_INTERVAL,
+        #                                 sample_size=SAMPLE_SIZE,
+        #                             )
+        # elif self.is_render and terminated:
+        #     self.render_engine.close()
         print(f'{observation}')
         print(f'tempsetpt:{self.temp_setpt}, reward:{reward}')
         return dict_to_np(observation), reward, terminated, False, info
 
     def _get_obs(self):
-        up_votes, down_votes = self.population_simulation.get_vote_up_count(self.temp_setpt) if self.temp_setpt!= None else (0,0)
+        pmv = self.population_simulation.get_pmv(self.temp_setpt) if self.temp_setpt!= None else (0,0)
         return {
                     "ambient_temp" : np.array([self.ambient_temp], dtype=np.float32),
                     "temp_setpt": np.array([self.temp_setpt], dtype=np.float32),
-                    "vote_up" : np.array([up_votes], dtype=np.float32),
-                    "vote_down" : np.array([down_votes], dtype=np.float32),
-                    "population_size" : np.array([len(self.population_simulation.get_humans(True))], dtype=np.float32),
+                    "pmv_n3": np.array([pmv[0]], dtype=np.float32),
+                    "pmv_n2": np.array([pmv[1]], dtype=np.float32),
+                    "pmv_n1": np.array([pmv[2]], dtype=np.float32),
+                    "pmv_0": np.array([pmv[3]], dtype=np.float32),
+                    "pmv_p1": np.array([pmv[4]], dtype=np.float32),
+                    "pmv_p2": np.array([pmv[5]], dtype=np.float32),
+                    "pmv_p3": np.array([pmv[6]], dtype=np.float32),                   
                     "curr_time_sec" : np.array([self.curr_time.seconds], dtype=np.float32),
                 }
     
-    def get_reward(self, temp):
+    def get_reward(self, temp: int) -> int:
         """
         Calculate the true reward based on the current temperature set point.
 
@@ -175,15 +197,25 @@ class AirconEnvironment(gym.Env):
         power = q / (TIME_INTERVAL / timedelta(hours=1)) / 1000
         # User 
         # print(f'Ambient:{self.ambient_temp}, Set:{temp}')
-        up_votes, down_votes = self.population_simulation.get_vote_up_count(temp)
-        n_humans_in = len(self.population_simulation.get_humans(True))
+        pmv = self.population_simulation.get_pmv(temp)
         # print(f'Upvotes:{up_votes}, Downvotes:{down_votes} Number of humans {n_humans_in}')
 
-        #NOTE: Doesnt work when there are many votes but all have discomfort vote of 1 
-        # average_user_comfort_vote = -(up_votes+down_votes)/n_humans_in 
-        average_user_comfort_vote = -(up_votes+down_votes) 
+        average_user_comfort_vote = 0
 
-        # print("Comfort score:", average_user_comfort_vote, "Power score:", power)
+        cum_pmv, prev_cum_pmv = 0, 0
+        for i in range(3):
+            cum_pmv += (pmv[i] + pmv[len(pmv)-1-i])*(3-i) # -3/+3 PMV means 3 votes
+            prev_cum_pmv += (self.prev_pmv[i] + self.prev_pmv[len(self.prev_pmv)-1-i])*(3-i)
+
+        if sum(pmv) > 0: pmv_f = cum_pmv/(sum(pmv)**0.4) # if no humans in building
+        else: pmv_f = 0
+        if sum(self.prev_pmv) > 0: ppmv_f = prev_cum_pmv/(sum(self.prev_pmv)**0.4)
+        else: ppmv_f = 0
+
+        average_user_comfort_vote = pmv_f - ppmv_f
+        self.prev_pmv = pmv
+
+        print("Comfort score:", average_user_comfort_vote, "Power score:", power)
         reward = (self.w_usercomfort * average_user_comfort_vote) +self.w_energy*power
         return reward
 
@@ -204,22 +236,23 @@ class AirconEnvironment(gym.Env):
     def optimize_temperature(self): #TODO: Make this more accurate - some setpt temperatures have better rewards
         """Find the optimal temperature to use for the system"""
         # Define the objective function to minimize (negative of reward function for maximization)
-        def objective(temp):
-            return -self.get_reward(temp)
+        pass
+        # def objective(temp):
+        #     return -self.get_reward(temp)
         
-        # Perform the optimization
-        result1 = minimize(objective, 20, method='Nelder-Mead', bounds=[(self.ambient_temp-15, self.ambient_temp+15)])
-        result2 = minimize(objective, 35, method='BFGS')
+        # # Perform the optimization
+        # result1 = minimize(objective, 20, method='Nelder-Mead', bounds=[(self.ambient_temp-15, self.ambient_temp+15)])
+        # result2 = minimize(objective, 30, method='Nelder-Mead', bounds=[(self.ambient_temp-15, self.ambient_temp+15)])
 
-        max_reward1 = self.get_reward(result1.x[0])
-        max_reward2 = self.get_reward(result2.x[0])
+        # max_reward1 = self.get_reward(result1.x[0])
+        # max_reward2 = self.get_reward(result2.x[0])
 
-        if max_reward1>max_reward2: result = result1
-        else: result = result2
-        print(f'optimal_temp:{result.x[0]}, reward:{self.get_reward(result.x[0])}')
-        # minimizer_kwargs = {"method": "BFGS"}
-        # result = basinhopping(objective, 25, minimizer_kwargs=minimizer_kwargs, niter=200)
-        return result.x[0]
+        # if max_reward1>max_reward2: result = result1
+        # else: result = result2
+        # print(f'optimal_temp:{result.x[0]}, reward:{self.get_reward(result.x[0])}')
+        # # minimizer_kwargs = {"method": "BFGS"}
+        # # result = basinhopping(objective, 25, minimizer_kwargs=minimizer_kwargs, niter=200)
+        # return result.x[0]
     
 def dict_to_np(input_dict):
     # Extract values from the dictionary and convert to a numpy array
