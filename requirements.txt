@@ -14,8 +14,8 @@ gym==0.26.2
 pygame==2.6.0
 control==0.10.0
 pythermalcomfort==2.10.0
-pybullet==
-stable_baselines
-tensorflow #because of baselines
+pybullet==3.2.6
+stable_baselines==2.3.2
+tensorflow==2.16.2 #because of baselines
 
 # to delete
