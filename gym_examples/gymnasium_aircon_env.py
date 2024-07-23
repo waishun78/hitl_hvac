@@ -44,6 +44,9 @@ class AirconEnvironment(gym.Env):
 
         self.curr_time = timedelta(days=0, hours=DAY_START_TIME)
 
+        self.comfort_score = 0
+        self.power_score = 0
+
         self.ambient_temp = 0
         self.update_ambient_temp() # TODO: Improve the complexity of this
         self.temp_setpt = self.ambient_temp
@@ -89,11 +92,12 @@ class AirconEnvironment(gym.Env):
 
     def _get_info(self) -> Dict:
         """Auxiliary information returned by step and reset"""
-        if self.check_optimal: 
-            optimal_temp = self.optimize_temperature()
-            return {"optimal_temp": optimal_temp}
-        else:
-            return {}
+        # if self.check_optimal: 
+        #     optimal_temp = self.optimize_temperature()
+        #     return {"optimal_temp": optimal_temp}
+        # else:
+        #     return {}
+        return {'comfort_score': self.comfort_score, 'power_score': self.power_score}
 
     def reset(self, seed=None, options=None) -> None:
         # We need the following line to seed self.np_random
@@ -113,7 +117,7 @@ class AirconEnvironment(gym.Env):
         self.is_terminate = False
 
         observation = self._get_obs()
-        info = {} # self._get_info()
+        info = self._get_info()
 
         # if self.is_render:
         #     reward = 0
@@ -132,7 +136,7 @@ class AirconEnvironment(gym.Env):
         #                 )
         return dict_to_np(observation), info
 
-    def step(self, action: int):
+    def step(self, action: int) -> np.ndarray:
         self.curr_time += TIME_INTERVAL
 
         self.temp_setpt = 20 + action * 0.2 # Convert action to temperature setpoint
@@ -162,8 +166,6 @@ class AirconEnvironment(gym.Env):
         #                             )
         # elif self.is_render and terminated:
         #     self.render_engine.close()
-        print(f'{observation}')
-        print(f'tempsetpt:{self.temp_setpt}, reward:{reward}')
         return dict_to_np(observation), reward, terminated, False, info
 
     def _get_obs(self):
@@ -193,30 +195,37 @@ class AirconEnvironment(gym.Env):
         """
         # def get_reward(self, temp, ambient_temp, w_usercomfort=1, w_energy=0.03):
         # Energy Usage
-        q = -m * c_p * abs(temp - self.ambient_temp)
+        q = -m * c_p * abs(temp - self.ambient_temp) # Range is maximum 24-[-20, 40]=>[0,50]
         power = q / (TIME_INTERVAL / timedelta(hours=1)) / 1000
         # User 
         # print(f'Ambient:{self.ambient_temp}, Set:{temp}')
-        pmv = self.population_simulation.get_pmv(temp)
+        pmv_dist = self.population_simulation.get_pmv(temp)
         # print(f'Upvotes:{up_votes}, Downvotes:{down_votes} Number of humans {n_humans_in}')
 
         average_user_comfort_vote = 0
 
         cum_pmv, prev_cum_pmv = 0, 0
         for i in range(3):
-            cum_pmv += (pmv[i] + pmv[len(pmv)-1-i])*(3-i) # -3/+3 PMV means 3 votes
+            cum_pmv += (pmv_dist[i] + pmv_dist[len(pmv_dist)-1-i])*(3-i) # -3/+3 PMV means 3 votes
             prev_cum_pmv += (self.prev_pmv[i] + self.prev_pmv[len(self.prev_pmv)-1-i])*(3-i)
 
-        if sum(pmv) > 0: pmv_f = cum_pmv/(sum(pmv)**0.4) # if no humans in building
+        if sum(pmv_dist) > 0: pmv_f = cum_pmv/(sum(pmv_dist)**0.4) # if no humans in building
         else: pmv_f = 0
         if sum(self.prev_pmv) > 0: ppmv_f = prev_cum_pmv/(sum(self.prev_pmv)**0.4)
         else: ppmv_f = 0
 
         average_user_comfort_vote = pmv_f - ppmv_f
-        self.prev_pmv = pmv
+        # average_user_comfort_vote = average_user_comfort_vote #TODO: Random Tunable scale
+        # print(f'PMV:{pmv_f}, {ppmv_f},{average_user_comfort_vote}')
 
-        print("Comfort score:", average_user_comfort_vote, "Power score:", power)
+        self.prev_pmv = pmv_dist
+
         reward = (self.w_usercomfort * average_user_comfort_vote) +self.w_energy*power
+
+        # Store for info
+        self.comfort_score = self.w_usercomfort * average_user_comfort_vote
+        self.power_score = self.w_energy*power
+
         return reward
 
     def update_ambient_temp(self):
@@ -254,7 +263,7 @@ class AirconEnvironment(gym.Env):
         # # result = basinhopping(objective, 25, minimizer_kwargs=minimizer_kwargs, niter=200)
         # return result.x[0]
     
-def dict_to_np(input_dict):
+def dict_to_np(input_dict) -> np.ndarray:
     # Extract values from the dictionary and convert to a numpy array
     np_array = np.array(list(input_dict.values()), dtype=np.float32).flatten()
     

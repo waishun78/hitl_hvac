@@ -1,5 +1,6 @@
 import math
 import random
+import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -14,6 +15,7 @@ Transition = namedtuple('Transition', ('state', 'action', 'next_state', 'reward'
 class ReplayMemory(object):
     def __init__(self, capacity):
         self.memory = deque([], maxlen=capacity)
+        self.capacity = capacity
 
     def push(self, *args):
         """Save a transition"""
@@ -24,6 +26,9 @@ class ReplayMemory(object):
 
     def __len__(self):
         return len(self.memory)
+    
+    def reset(self):
+        self.memory = deque([], maxlen=self.capacity)
 
 
 class DQN(nn.Module):
@@ -58,7 +63,7 @@ class HITLDQNAgent(BaseAgent):
         - tau: Update rate of the target network.
         - lr: Learning rate for the optimizer.
         """
-        self.learning = True
+        self.is_exploring = True
         self.n_observations = n_observations
         self.n_actions = n_actions
         self.batch_size = batch_size
@@ -76,11 +81,11 @@ class HITLDQNAgent(BaseAgent):
         self.target_net = DQN(n_observations, n_actions).to(device)
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=lr, amsgrad=True)
-        self.steps_done = 0
+        self.steps_done = 0 # number od steps done using the same replay memory
 
     def select_action(self, state):
-        """Select an action based on the current state."""
-        if self.learning:
+        """Select an action based on the current state."""        
+        if self.is_exploring:
             sample = random.random()
             eps_threshold = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
             self.steps_done += 1
@@ -125,6 +130,11 @@ class HITLDQNAgent(BaseAgent):
         for key in policy_net_state_dict:
             target_net_state_dict[key] = policy_net_state_dict[key]*self.tau + target_net_state_dict[key]*(1-self.tau)
         self.target_net.load_state_dict(target_net_state_dict)
+
+    def reset_replay_memory(self):
+        """Reset replay memory used to optimize the model, when you want to remove all previous experiences"""
+        self.memory.reset()
+        self.steps_done = 0
 
     def memorize(self, state, action, next_state, reward):
         self.memory.push(state, action, next_state, reward)
