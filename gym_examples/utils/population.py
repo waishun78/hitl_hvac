@@ -52,6 +52,20 @@ class PopulationSimulation():
         """
         return self.humans.copy(deep=True) # Humans cannot be changed
     
+    def get_comfort_profile_df(self) -> pd.DataFrame:
+        """
+        Return the a met clo df padded to padded by MAX_POP_SIZE  x 2
+        """
+        df = self.humans.loc[:,['met', 'clo']]
+        from gym_examples.hitl_mdp_env import HITLAirconEnvironment
+        df = df.iloc[:HITLAirconEnvironment.MAX_POP_SIZE] # If there are more people than MAX_POP_SIZE
+
+        pad = max(HITLAirconEnvironment.MAX_POP_SIZE - df.shape[0], 0)
+        pad_df = pd.DataFrame(np.empty((pad,2)), columns=["met", "clo"])
+
+        df = pd.concat([df, pad_df], axis=0)
+        return df
+    
     def step(self) -> None:
         """Update the population simulation by one step"""
         n_exit = min(max(0,(int(random.gauss(self.move_mu, self.move_sigma)))), len(self.humans)) # people entering the building
