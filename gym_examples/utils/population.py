@@ -76,13 +76,13 @@ class PopulationSimulation():
         new_humans = self.generate_humans(n_enter)
         self.humans = pd.concat([self.humans, new_humans])
     
-    def get_pmv(self, temp:int) -> List[int]:
+    def get_pmv(self, temp:int) -> np.ndarray[int]:
         """Return the list of PMV counts for -3 to +3 from the population in the building, index 0 is count for -3"""
         pmv = self.humans.apply(lambda row: self.comfort_model.pmv(row['met'], row['clo'], temp), axis=1)
         rounded_pmv = np.round(pmv).astype(int)
-        pmv_counts = [0 for _ in range(7)]
-        for value in rounded_pmv:
-            pmv_counts[value] += 1
+        adjusted_indices = rounded_pmv + ThermalComfortModelSim.max_pmv # bincount only works with pos int
+        valid_indices = (adjusted_indices >= 0) & (adjusted_indices < ThermalComfortModelSim.max_pmv*2+1)  # NOTE: Removed extreme PMV values which are >3 and < -3
+        pmv_counts = np.bincount(adjusted_indices[valid_indices], minlength=ThermalComfortModelSim.max_pmv*2+1)
         return pmv_counts
 
     def generate_humans(self, n:int) -> pd.DataFrame:

@@ -12,6 +12,7 @@ from gym_examples.utils.population import PopulationSimulation
 
 from gym_examples.utils.constants import *
 from gym_examples.utils.simulation_visualiser import SimulationVisualiser
+from gym_examples.utils.thermal_comfort_model_sim import ThermalComfortModelSim
 
 class HITLPOMDPAirconEnvironment(gym.Env):
     """
@@ -45,7 +46,8 @@ class HITLPOMDPAirconEnvironment(gym.Env):
 
         self.building = Building()
         self.population_simulation = population_simulation
-        self.prev_pmv = [0 for _ in range(7)]
+        # self.prev_pmvf = [1 for _ in range(9)] # NOTE: If all zero, it will be in a perfect state. Init state gives equal votes to all states
+        self.prev_pmvf = 0
 
         self.is_terminate = False
 
@@ -126,13 +128,15 @@ class HITLPOMDPAirconEnvironment(gym.Env):
         return {
                     "ambient_temp" : np.array([self.ambient_temp], dtype=np.float32),
                     "temp_setpt": np.array([self.temp_setpt], dtype=np.float32),
-                    "pmv_n3": np.array([pmv[0]], dtype=np.float32),
-                    "pmv_n2": np.array([pmv[1]], dtype=np.float32),
-                    "pmv_n1": np.array([pmv[2]], dtype=np.float32),
-                    "pmv_0": np.array([pmv[3]], dtype=np.float32),
-                    "pmv_p1": np.array([pmv[4]], dtype=np.float32),
-                    "pmv_p2": np.array([pmv[5]], dtype=np.float32),
-                    "pmv_p3": np.array([pmv[6]], dtype=np.float32),                   
+                    "pmv_n4": np.array([pmv[0]], dtype=np.float32),
+                    "pmv_n3": np.array([pmv[1]], dtype=np.float32),
+                    "pmv_n2": np.array([pmv[2]], dtype=np.float32),
+                    "pmv_n1": np.array([pmv[3]], dtype=np.float32),
+                    "pmv_0": np.array([pmv[4]], dtype=np.float32),
+                    "pmv_p1": np.array([pmv[5]], dtype=np.float32),
+                    "pmv_p2": np.array([pmv[6]], dtype=np.float32),                   
+                    "pmv_p3": np.array([pmv[7]], dtype=np.float32),                   
+                    "pmv_p4": np.array([pmv[8]], dtype=np.float32),                   
                     "curr_time_sec" : np.array([self.curr_time.seconds], dtype=np.float32),
                 }
     
@@ -146,29 +150,23 @@ class HITLPOMDPAirconEnvironment(gym.Env):
         Returns:
             float: Calculated reward.
         """
-
         pmv_dist = self.population_simulation.get_pmv(temp)
+        # Calculate cumulative PMV for current and previous distributions
+        weights = np.array([i for i in range(ThermalComfortModelSim.max_pmv, 0, -1)] + [i for i in range(ThermalComfortModelSim.max_pmv + 1)])
+        cum_pmv = np.sum(pmv_dist * weights)
+        # prev_cum_pmv = np.sum(self.prev_pmvf * weights)
 
-        average_user_comfort_vote = 0
-
-        cum_pmv, prev_cum_pmv = 0, 0
-        for i in range(3):
-            cum_pmv += (pmv_dist[i] + pmv_dist[len(pmv_dist)-1-i])*(3-i) # -3/+3 PMV means 3 votes
-            prev_cum_pmv += (self.prev_pmv[i] + self.prev_pmv[len(self.prev_pmv)-1-i])*(3-i)
-        if sum(pmv_dist) > 0: pmv_f = cum_pmv/(sum(pmv_dist)) # if no humans in building
-        else: pmv_f = 0
-        if sum(self.prev_pmv) > 0: ppmv_f = prev_cum_pmv/(sum(self.prev_pmv))
-        else: ppmv_f = 0
-
+        # Calculate normalized PMV factors
+        pmv_sum = np.sum(pmv_dist)
+        # prev_pmv_sum = np.sum(self.prev_pmvf)
+        pmv_f = cum_pmv / pmv_sum if pmv_sum > 0 else 0
+        # ppmv_f = prev_cum_pmv / prev_pmv_sum if prev_pmv_sum > 0 else 0
         #TODO: Tune self.discount hyperparameter (higher discount, less emphasis given to state change, more emphasis given to current state change)
-        average_user_comfort_vote = pmv_f - self.discount * ppmv_f 
+        average_user_comfort_vote = pmv_f - self.discount * self.prev_pmvf
+        reward = self.w_usercomfort * average_user_comfort_vote
 
-        self.prev_pmv = pmv_dist
-
-        reward = (self.w_usercomfort * average_user_comfort_vote)
-
-        # Store for get_info()
         self.comfort_score = self.w_usercomfort * average_user_comfort_vote
+        self.prev_pmvf = pmv_f
 
         return reward
 
