@@ -55,6 +55,7 @@ class HITLPOMDPAirconEnvironment(gym.Env):
             low=np.array([
                 -2**63, # ambient temp
                 -2**63, # temp_setpt
+                0, # PMV -4
                 0, # PMV -3
                 0, # PMV -2
                 0, # PMV -1
@@ -62,6 +63,7 @@ class HITLPOMDPAirconEnvironment(gym.Env):
                 0, # PMV +1
                 0, # PMV +2
                 0, # PMV +3
+                0, # PMV +4
                 -2**63, # curr_time_sec
                 ], dtype=np.float32),
             high=np.array([
@@ -70,6 +72,8 @@ class HITLPOMDPAirconEnvironment(gym.Env):
                 2**63-1, 
                 2**63-1, 
                 2**63-1,
+                2**63-1, 
+                2**63-1, 
                 2**63-1, 
                 2**63-1, 
                 2**63-1, 
@@ -154,13 +158,8 @@ class HITLPOMDPAirconEnvironment(gym.Env):
         # Calculate cumulative PMV for current and previous distributions
         weights = np.array([i for i in range(ThermalComfortModelSim.max_pmv, 0, -1)] + [i for i in range(ThermalComfortModelSim.max_pmv + 1)])
         cum_pmv = np.sum(pmv_dist * weights)
-        # prev_cum_pmv = np.sum(self.prev_pmvf * weights)
-
-        # Calculate normalized PMV factors
         pmv_sum = np.sum(pmv_dist)
-        # prev_pmv_sum = np.sum(self.prev_pmvf)
         pmv_f = cum_pmv / pmv_sum if pmv_sum > 0 else 0
-        # ppmv_f = prev_cum_pmv / prev_pmv_sum if prev_pmv_sum > 0 else 0
         #TODO: Tune self.discount hyperparameter (higher discount, less emphasis given to state change, more emphasis given to current state change)
         average_user_comfort_vote = pmv_f - self.discount * self.prev_pmvf
         reward = self.w_usercomfort * average_user_comfort_vote
