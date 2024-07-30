@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 class ThermalComfortModelSim():
+    max_pmv = 4
     def __init__(self):
         self.vr = 0.1 # m/s
         self.rh = 50
@@ -11,7 +12,7 @@ class ThermalComfortModelSim():
         self.clo_l = [0.46, 0.57, 0.68]
 
     def pmv(self, met:int, clo:int, temp:int):
-        pmv = pmv_ppd(temp, temp, self.vr, self.rh, met, clo, standard="ASHRAE")['pmv']
+        pmv = pmv_ppd(temp, temp, self.vr, self.rh, met, clo, standard="ASHRAE", limit_inputs=False)['pmv']
         return pmv
 
     # def show_distributions(self):
