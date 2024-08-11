@@ -1,0 +1,55 @@
+# Python stuff
+__pycache__/
+*.py[cod]
+*$py.class
+.ipynb_checkpoints
+*.egg-info
+
+#vscode conf
+.vscode
+
+# Other softwares
+EnergyPlus*/
+bcvtb/
+
+# Simulation outputs
+Eplus-env*/
+
+#Socket.cfg in tests
+socket.cfg
+
+# Tensorboard mlflow and models outputs
+tensorboard*/
+*.zip
+best_model*/
+mlruns/
+
+# Google storage credentials
+google-storage.json
+
+# Google Cloud MLflow server start script
+start_mlflow_tracking.sh
+
+# Source docs _build directory generation using RST preview in Visual Studio Code
+docs/source/_build/
+docs/build/
+
+#dist folder for pypi packages
+dist/
+
+#.pytest_cache
+.pytest_cache/
+
+#.pytype
+.pytype/
+
+#coverage
+.coverage
+codecov
+coverage.xml
+
+#wandb
+wandb/
+
+#fcntl
+.lock

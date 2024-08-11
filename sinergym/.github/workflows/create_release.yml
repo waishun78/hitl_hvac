@@ -1,0 +1,64 @@
+on:
+  release:
+    types: [published, edited]
+
+jobs:
+  upload-release-container:
+    if: "!github.event.release.prerelease"
+    env:
+      DOCKER_USER: ${{ secrets.DOCKER_USER }}
+      DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+    name: Upload Docker hub container with release tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        uses: actions/checkout@master
+      - name: Get tag Release
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        id: tag_version
+        uses: abatilo/release-info-action@v1.3.0
+        with:
+          owner: ugr-sail
+          repo: sinergym
+      - name: Build container complete image with release tag
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        env:
+          TAG: ${{ steps.tag_version.outputs.latest_tag }}
+          #TAG_DATE: ${{ steps.tag_version.outputs.latest_tag_published_at }}
+        run: docker build . --file Dockerfile --build-arg SINERGYM_EXTRAS=[extras] --tag $DOCKER_USER/sinergym:$TAG
+      - name: Build container lite image with release tag
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        env:
+          TAG: ${{ steps.tag_version.outputs.latest_tag }}
+          #TAG_DATE: ${{ steps.tag_version.outputs.latest_tag_published_at }}
+        run: docker build . --file Dockerfile --build-arg SINERGYM_EXTRAS=[test] --tag $DOCKER_USER/sinergym:$TAG-lite
+      - name: Login Docker Hub
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        run: docker login -u $DOCKER_USER -p $DOCKER_PASSWORD
+      - name: Push complete container built with release tag
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        env:
+          TAG: ${{ steps.tag_version.outputs.latest_tag }}
+        run: docker push $DOCKER_USER/sinergym:$TAG
+      - name: Push lite container built with release tag
+        if: "${{ env.DOCKER_USER != '' && env.DOCKER_PASSWORD != '' }}"
+        env:
+          TAG: ${{ steps.tag_version.outputs.latest_tag }}
+        run: docker push $DOCKER_USER/sinergym:$TAG-lite
+
+  pypi-publish:
+    name: upload release to PyPI
+    runs-on: ubuntu-latest
+    # Specifying a GitHub environment is optional, but strongly encouraged
+    environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Preparing dist directory
+        run: python setup.py sdist
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1  
