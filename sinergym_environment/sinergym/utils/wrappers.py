@@ -15,7 +15,6 @@ from sinergym.utils.common import is_wrapped
 from sinergym.utils.constants import LOG_WRAPPERS_LEVEL, YEAR
 from sinergym.utils.logger import CSVLogger, Logger
 
-
 class MultiObjectiveReward(gym.Wrapper):
 
     logger = Logger().getLogger(name='WRAPPER MultiObjectiveReward',

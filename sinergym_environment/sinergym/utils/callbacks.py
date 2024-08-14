@@ -442,10 +442,8 @@ class LoggerEvalCallback(EventCallback):
                 episodes_data['episodes_comfort_violation'])
 
             if self.verbose >= 1:
-                print(f"Eval num_timesteps={self.num_timesteps}, " f"episode_reward={
-                    cumulative_reward: .2f} + /- {std_cumulative_reward: .2f}")
-                print(f"Episode length: {
-                    mean_ep_length: .2f} + /- {std_ep_length: .2f}")
+                print(f"Eval num_timesteps={self.num_timesteps}", f"episode_reward={cumulative_reward: .2f} + /- {std_cumulative_reward: .2f}")
+                print(f"Episode length: {mean_ep_length: .2f} + /- {std_ep_length: .2f}")
             # Add to current Logger (our custom metrics)
             for key, metric in self.evaluation_metrics.items():
                 self.logger.record('eval/' + key, metric)

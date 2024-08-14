@@ -13,12 +13,18 @@ version_file = os.path.join(os.path.dirname(__file__), 'version.txt')
 with open(version_file, 'r') as file_handler:
     __version__ = file_handler.read().strip()
 
-# ---------------------------- 0) Demo environment --------------------------- #
+# ---------------------------- 1) Custom environment --------------------------- #
+
+# Environment ID: 'Eplus-hitl-v1' - A unique identifier for this environment.
+# Building File: '1ZoneDataCenterCRAC_wApproachTemp.epJSON' - Specifies the single-zone building configuration.
+# Weather File: 'USA_PA_Pittsburgh-Allegheny.County.AP.725205_TMY3.epw' - Weather file used for simulation.
+
+
 register(
-    id='Eplus-demo-v1',
+    id='Eplus-hitl-v1',
     entry_point='sinergym.envs:EplusEnv',
     kwargs={
-        'building_file': '5ZoneAutoDXVAV.epJSON',
+        'building_file': '1ZoneDataCenterCRAC_wApproachTemp.epJSON',
         'weather_files': 'USA_PA_Pittsburgh-Allegheny.County.AP.725205_TMY3.epw',
         'action_space': gym.spaces.Box(
             low=np.array([15.0, 22.5], dtype=np.float32),
@@ -63,7 +69,7 @@ register(
             'energy_variables': ['HVAC_electricity_demand_rate'],
             'range_comfort_winter': (20.0, 23.5),
             'range_comfort_summer': (23.0, 26.0)},
-        'env_name': 'demo-v1',
+        'env_name': 'hitl-v1',
         'config_params': {
             'runperiod': (1, 1, 1991, 1, 3, 1991),
             'timesteps_per_hour': 1
