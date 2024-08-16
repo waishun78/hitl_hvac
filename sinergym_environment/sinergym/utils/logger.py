@@ -11,6 +11,10 @@ import pkg_resources
 
 from sinergym.utils.constants import LOG_FORMAT
 
+print("CSVLogger module is being imported...")
+print("Wandb module is being imported...")
+print("Starting now...")
+
 required = {'stable-baselines3', 'wandb'}
 installed = {pkg.key for pkg in pkg_resources.working_set}
 missing = required - installed
@@ -103,16 +107,17 @@ class CSVLogger(object):
             log_file (Optional[str], optional): log_file path for monitor.csv, there will be one CSV per episode. Defaults to None.
             flag (bool, optional): Activate (True) or deactivate (False) Logger in real time. Defaults to True.
         """
-
+        print("Initializing CSVLogger...")
         self.monitor_header = monitor_header
         self.progress_header = progress_header + '\n'
         self.log_file = log_file
         self.log_progress_file = log_progress_file
         self.flag = flag
-
+        
         # episode data
         self.steps_data = [self.monitor_header.split(',')]
         self.steps_data_normalized = [self.monitor_header.split(',')]
+        
         self.episode_data = {
             'rewards': [],
             'reward_energy_terms': [],
@@ -125,6 +130,9 @@ class CSVLogger(object):
             'total_time_elapsed': 0,
             'comfort_violation_timesteps': 0
         }
+
+        # Store rewards per time step
+        self.step_rewards = []
 
     def _create_row_content(
             self,
@@ -188,8 +196,7 @@ class CSVLogger(object):
             self.episode_data['total_timesteps'] = info['timestep']
 
     def _reset_logger(self) -> None:
-        """Reset relevant data to next episode summary in progress.csv.
-        """
+        """Reset relevant data to next episode summary in progress.csv."""
         self.steps_data = [self.monitor_header.split(',')]
         self.steps_data_normalized = [self.monitor_header.split(',')]
         self.episode_data = {
@@ -204,6 +211,7 @@ class CSVLogger(object):
             'total_time_elapsed': 0,
             'comfort_violation_timesteps': 0
         }
+        # Note: step_rewards is not reset here to preserve the rewards for the entire run
 
     def log_step(
             self,
@@ -212,21 +220,19 @@ class CSVLogger(object):
             terminated: bool,
             truncated: bool,
             info: Dict[str, Any]) -> None:
-        """Log step information and store it in steps_data attribute.
+        """Log step information and store it in steps_data attribute."""
+        print("Info dictionary:", info)
+        print("Reward:", info.get('reward', 0))
+        self.step_rewards.append(info.get('reward', 0))
+        print("Step Rewards:", len(self.step_rewards))
 
-        Args:
-            obs (List[Any]): Observation from step.
-            action (Union[int, np.ndarray, List[Any]]): Action done in step.
-            terminated (bool): terminated flag in step.
-            truncated (bool): truncated flag in step.
-            info (Dict[str, Any]): Extra info collected in step.
-        """
         if self.flag:
             self.steps_data.append(
                 self._create_row_content(
                     obs, action, terminated, truncated, info))
             # Store step information for episode
             self._store_step_information(info)
+
 
     def log_step_normalize(
             self,
@@ -258,7 +264,6 @@ class CSVLogger(object):
 
         """
         if self.flag:
-
             # WRITE steps_info rows in monitor.csv
             with open(self.log_file, 'w', newline='') as file_obj:
                 # Create a writer object from csv module
