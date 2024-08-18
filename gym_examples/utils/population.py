@@ -25,7 +25,9 @@ class PopulationSimulation():
                 clo_sigma: int, 
                 move_mu: int,
                 move_sigma:int,
-                time_interval:timedelta=timedelta(hours=1)
+                time_interval:timedelta=timedelta(hours=1),
+                irrational: bool = False,
+                irrational_B: int = 1 #NOTE: For the value to be equal to rational 0 = totally rational/everything same likelihood
                 ):
         self.interval = time_interval
         self.met_mu = met_mu
@@ -35,6 +37,8 @@ class PopulationSimulation():
         self.move_mu = move_mu
         self.move_sigma = move_sigma
         self.comfort_model = ThermalComfortModelSim()
+        self.irrational = irrational
+        self.irrational_B = irrational_B
 
         # Initialise the population of all possible humans in simulation (which will randomly enter and exit the building), first value cannot be negative
         n_people = max(0,(int(random.gauss(self.move_mu, self.met_sigma)))) 
@@ -76,7 +80,7 @@ class PopulationSimulation():
         new_humans = self.generate_humans(n_enter)
         self.humans = pd.concat([self.humans, new_humans])
     
-    def get_pmv(self, temp:int) -> np.ndarray[int]:
+    def get_true_pmv(self, temp:int) -> np.ndarray[int]:
         """Return the list of PMV counts for -3 to +3 from the population in the building, index 0 is count for -3"""
         pmv = self.humans.apply(lambda row: self.comfort_model.pmv(row['met'], row['clo'], temp), axis=1)
         rounded_pmv = np.round(pmv).astype(int)
@@ -84,6 +88,47 @@ class PopulationSimulation():
         valid_indices = (adjusted_indices >= 0) & (adjusted_indices < ThermalComfortModelSim.max_pmv*2+1)  # NOTE: Removed extreme PMV values which are >3 and < -3
         pmv_counts = np.bincount(adjusted_indices[valid_indices], minlength=ThermalComfortModelSim.max_pmv*2+1)
         return pmv_counts
+    
+    def get_observed_pmv(self, temp:int) -> np.ndarray[int]:
+        """Return the observed pmv score given a temperature"""
+        if self.irrational:
+            pmv = self.humans.apply(lambda row: self.comfort_model.pmv(row['met'], row['clo'], temp), axis=1)
+            irrational_pmv = self.irrationality_score(pmv)
+
+            rounded_pmv = np.round(irrational_pmv).astype(int)
+            adjusted_indices = rounded_pmv + ThermalComfortModelSim.max_pmv # bincount only works with pos int
+            valid_indices = (adjusted_indices >= 0) & (adjusted_indices < ThermalComfortModelSim.max_pmv*2+1)  # NOTE: Removed extreme PMV values which are >3 and < -3
+            pmv_counts = np.bincount(adjusted_indices[valid_indices], minlength=ThermalComfortModelSim.max_pmv*2+1)
+            return pmv_counts
+        else:
+            return self.get_true_pmv(temp)
+        
+    def dropoff_score(self, pmv: pd.Series):
+        """Given an array of pmv score, apply dropoff to it and return an array of new pmvs of the same size"""
+    #    TODO
+        pass
+
+    def irrationality_score(self, pmv:pd.Series):
+        """Given an array of pmv score, apply irrationality to it and return an array of new pmvs of the same size"""
+        pmv = pmv.to_numpy()
+        v0_stack = np.repeat(pmv, 7).reshape(-1, 7)
+        possible_values = np.tile(np.arange(-3, 4), len(pmv)).reshape(-1, 7)
+        differences = v0_stack - possible_values
+        # print(f'Differences:{differences}')
+        numerators = np.exp(-np.abs(differences) * self.irrational_B)
+        # print(f'Numerators: {numerators}')
+        denominator = np.sum(numerators, axis=1, keepdims=True)
+        probabilities = numerators / denominator
+        # print(f'PMV:\n {pmv}, Denominator:\n{denominator}')
+        cumulative_probabilities = np.cumsum(probabilities, axis=1)
+        # print(f'Cum: {cumulative_probabilities}')
+        random_samples = np.random.rand(pmv.shape[0], 1)
+        # print(f'Random sample:{random_samples}')
+        chosen_indices = np.array([np.searchsorted(cumulative_probabilities[i], random_samples[i]) for i in range(len(pmv))]).flatten()
+        # print(f'chosen indices:{chosen_indices}')
+        chosen_values = possible_values[np.arange(len(pmv)), chosen_indices]
+        # print(f'chosen val:{chosen_values}')
+        return chosen_values
 
     def generate_humans(self, n:int) -> pd.DataFrame:
         """Generate a dataframe of size n with human attributes
