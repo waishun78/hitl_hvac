@@ -159,7 +159,7 @@ class HITLAirconEnvironment(gym.Env):
             float: Calculated reward.
         """
 
-        pmv_dist = self.population_simulation.get_pmv(temp)
+        pmv_dist = self.population_simulation.get_true_pmv(temp)
         # print(f'Upvotes:{up_votes}, Downvotes:{down_votes} Number of humans {n_humans_in}')
 
         average_user_comfort_vote = 0
@@ -175,9 +175,6 @@ class HITLAirconEnvironment(gym.Env):
         else: ppmv_f = 0
 
         average_user_comfort_vote = pmv_f - self.discount * ppmv_f
-        # average_user_comfort_vote = average_user_comfort_vote #TODO: Random Tunable scale
-        # print(f'PMV:{pmv_f}, {ppmv_f},{average_user_comfort_vote}')
-
         self.prev_pmv = pmv_dist
 
         reward = (self.w_usercomfort * average_user_comfort_vote)

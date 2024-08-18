@@ -84,6 +84,8 @@ class HITLPOMDPAirconEnvironment(gym.Env):
         )
         # self.action_space = spaces.Box(low=0, high=50)
         self.action_space = spaces.Discrete(46) #range between $20-28 \degree C$}, with intervals of $0.2 \degree C$
+        self.weights = np.array([i for i in range(ThermalComfortModelSim.max_pmv, 0, -1)] + [i for i in range(ThermalComfortModelSim.max_pmv + 1)])
+
 
     def _get_info(self) -> Dict:
         """Auxiliary information returned by step and reset"""
@@ -128,7 +130,7 @@ class HITLPOMDPAirconEnvironment(gym.Env):
         return dict_to_np(observation), reward, terminated, False, info
 
     def _get_obs(self) -> np.ndarray:
-        pmv = self.population_simulation.get_pmv(self.temp_setpt) if self.temp_setpt!= None else (0,0)
+        pmv = self.population_simulation.get_observed_pmv(self.temp_setpt) if self.temp_setpt!= None else (0,0)
         return {
                     "ambient_temp" : np.array([self.ambient_temp], dtype=np.float32),
                     "temp_setpt": np.array([self.temp_setpt], dtype=np.float32),
@@ -154,10 +156,9 @@ class HITLPOMDPAirconEnvironment(gym.Env):
         Returns:
             float: Calculated reward.
         """
-        pmv_dist = self.population_simulation.get_pmv(temp)
+        pmv_dist = self.population_simulation.get_true_pmv(temp)
         # Calculate cumulative PMV for current and previous distributions
-        weights = np.array([i for i in range(ThermalComfortModelSim.max_pmv, 0, -1)] + [i for i in range(ThermalComfortModelSim.max_pmv + 1)])
-        cum_pmv = np.sum(pmv_dist * weights)
+        cum_pmv = np.sum(pmv_dist * self.weights)
         pmv_sum = np.sum(pmv_dist)
         pmv_f = cum_pmv / pmv_sum if pmv_sum > 0 else 0
         #TODO: Tune self.discount hyperparameter (higher discount, less emphasis given to state change, more emphasis given to current state change)
