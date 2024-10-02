@@ -6,10 +6,10 @@ import torch
 from gym_examples.utils.population import PopulationSimulation
 from models.HITLDQNAgent import HITLDQNAgent
 
-# Needed:Import gym environment (assumed to be already registered)
+# Needed: Import gym environment (assumed to be already registered)
 import gym_examples
 
-LOAD_FILEPATH = "runs/saved_models/hitl_dqnv0"
+LOAD_FILEPATH = "runs/saved_models/hitl_dqnv2((300steps)jetwei)"
 
 def plot_durations(rewards_ls, show_result=False):
     plt.figure(1)
@@ -20,6 +20,7 @@ def plot_durations(rewards_ls, show_result=False):
     plt.ylabel('Daily Cummulative Reward', fontsize=14)
     plt.plot(rewards_ls)
     # plt.plot(fixed_rsts)
+
     plt.legend(["RL policy", "Set point control"])
     
     plt.pause(0.001)
@@ -67,7 +68,8 @@ def train_w_reset_h(agent:HITLDRQNAgent, env:gym.Env, episodes: int, device, is_
             state = next_state
             agent.optimize_model()
 
-
+        print(f"Cumulative Reward for Episode {i_episode}: {ep_rewards}")
+        print("\n")
         rewards.append(ep_rewards.item())
 
         agent.reset_hidden_state() # Reset the hidden state of the agent
@@ -102,13 +104,29 @@ def train(agent:BaseAgent, env:gym.Env, episodes: int, device, is_exploring:bool
             agent.memorize(state, action, next_state, reward)
             state = next_state
             agent.optimize_model()
-
+        
+        print(f"Cumulative Reward for Episode {i_episode}: {ep_rewards}")
+        print("\n")
         rewards.append(ep_rewards.item())
             
     return agent, rewards
 
+
+# ///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+# ############################ #
+#                              #
+# Running the training process #
+#                              #
+# ############################ #
 if __name__ == "__main__":
     print("######------------------------------------Starting training...------------------------------------######")
+
+
+    #################
+    # Miscellaneous #
+    #################
     # set up matplotlib
     from IPython import display
 
@@ -121,24 +139,50 @@ if __name__ == "__main__":
         "cpu"
     )
 
+
+    #############################################################################
+    # Initiating the Air Con Gymnasium RL Environment and Population Simulation #
+    #############################################################################
     population = PopulationSimulation(1, 0.3, 0.5, 2, 100, 50)
     # w_energy, w_usercomfort is from generated from a comfort score of range (-40 - 0) and power score (-1000 - -300)
     env = gym.make("AirconEnvironment-v0", population_simulation=population, is_render=False, check_optimal=False ,w_usercomfort=20, w_energy=1)
     print("######------------------------------------Resetting environment...------------------------------------######")
+
+
+    ###########################
+    # Initiating the RL Agent #
+    ###########################
     state, info = env.reset()
     n_observations = len(state)
     n_actions = env.action_space.n
 
     agent = HITLDQNAgent(n_observations, n_actions, device)
 
-    episode_durations = []
+
+    #################################
+    # Initiating number of Episodes #
+    #################################
+    episode_durations = []      # (comment from Jetwei) This is not being used, was there a previous purpose for this? 
 
     NUM_EPISODES = 100 if torch.cuda.is_available() or torch.backends.mps.is_available() else 50 # Number of days (each episode is a day)
 
-    rewards = train(agent, env, NUM_EPISODES, device, True)
 
+    #################################################################################################################################
+    # Training the RL Agent with the Air Con Gymnasium RL Environment and Population Simulation in the specified number of Episodes #
+    #################################################################################################################################
+    agent, rewards = train(agent, env, NUM_EPISODES, device, True)
+
+
+    #######################################################################################################################################
+    # Saving the trained RL Agent with the Air Con Gymnasium RL Environment and Population Simulation in the specified number of Episodes #
+    #######################################################################################################################################
     agent.save_model(LOAD_FILEPATH)
 
+
+    ##################################################################################
+    # Evaluating the trained RL Agent by Plotting Cumulative Reward against Episodes #
+    ##################################################################################
+    print(f"\nRewards (in order of episodes): {rewards}")
     plot_durations(rewards, show_result=True)
     plt.ioff()
     plt.show()
