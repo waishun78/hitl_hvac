@@ -9,7 +9,7 @@ from models.HITLDQNAgent import HITLDQNAgent
 # Needed: Import gym environment (assumed to be already registered)
 import gym_examples
 
-LOAD_FILEPATH = "runs/saved_models/hitl_dqnv2((300steps)jetwei)"
+LOAD_FILEPATH = "runs/saved_models/hitl_dqnv0"
 
 def plot_durations(rewards_ls, show_result=False):
     plt.figure(1)
