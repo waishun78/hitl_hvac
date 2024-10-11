@@ -9,6 +9,7 @@ anomalous_temperatures = np.array([10, 35, 40])                    # Anomalies t
 temperatures = np.concatenate([normal_temperatures, anomalous_temperatures]).reshape(-1, 1)
 
 # Fit the model
+# The 'contamination' parameter controls the threshold for classifying data points as anomalies or outliers.
 clf = IsolationForest(contamination=0.02, random_state=42)
 clf.fit(temperatures)
 
